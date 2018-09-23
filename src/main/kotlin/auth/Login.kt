@@ -3,7 +3,9 @@ package auth
 import com.github.salomonbrys.kodein.Kodein
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
+import commands.BasicHandlers
 import kotlinx.coroutines.experimental.runBlocking
+import org.apache.http.impl.cookie.BasicCommentHandler
 import utils.FileUtils
 import utils.toJsonArray
 import java.awt.Desktop
@@ -47,7 +49,11 @@ class Login {
                 .build()
                 .execute()
         val accepter = RedirectAccepter()
-        Desktop.getDesktop().browse(url)
+        try {
+            Desktop.getDesktop().browse(url)
+        } catch (e: Exception) {
+            Runtime.getRuntime().exec(arrayOf("xdg-open", url.toString()))
+        }
         val code = runBlocking { accepter.listenForCode() }
         val authorizationCodeRequest = spotifyApi.authorizationCode(code).build()
         val authorizationCodeCredentials = authorizationCodeRequest.execute();
@@ -104,10 +110,14 @@ class Login {
 
 fun main(args: Array<String>) {
     val spotifyApi = Login().createAuthenticatedApi()
+    val handler = BasicHandlers(spotifyApi)
+    handler.radioFromCurrentSong()
+            .build().execute()
+    return
     spotifyApi.wrapped.usersAvailableDevices.build().execute().forEach {
         println("Id ${it.id} name ${it.name}")
     }
-    val topTracks = spotifyApi.wrapped.usersTopTracks.limit(30).offset(20).time_range("long_term").build().execute().items
+    val topTracks = spotifyApi.wrapped.usersTopTracks.limit(30).offset(20).time_range("short_term").build().execute().items
     spotifyApi.wrapped.startResumeUsersPlayback()
 
             .uris(topTracks.toJsonArray())

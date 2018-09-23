@@ -26,6 +26,10 @@ object Commands {
         val commands = splitOnSpaces(input)
         return when (commands[0]) {
             "playpause" -> TogglePlayCommand()
+            "next-track" -> NextTrackCommand()
+            "previous-track" -> PreviousTrackCommand()
+            "play-album-current" -> PlayAlbumFromCurrentSong()
+            "radio-from-current-song" -> RadioFromCurrentSong()
             "search" -> SearchCommand(SearchCategory.byName(commands[1]), commands[2])
             "start" -> PlayCommand(commands[1], commands[2])
             "up" -> UpCommand()
@@ -39,6 +43,7 @@ object Commands {
 }
 
 sealed class Command
+
 
 enum class SearchCategory(val externalName: String) {
     ARTIST("artist"),
@@ -63,3 +68,8 @@ class UpCommand : Command()
 class DownCommand : Command()
 class LeftCommand : Command()
 class RightCommand : Command()
+class NextTrackCommand : Command()
+class PreviousTrackCommand : Command()
+class PlayAlbumFromCurrentSong : Command()
+class RadioFromCurrentSong : Command()
+class PauseCurrentSong : Command()
