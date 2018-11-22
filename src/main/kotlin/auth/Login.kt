@@ -4,7 +4,12 @@ import com.github.salomonbrys.kodein.Kodein
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
 import commands.BasicHandlers
+import commands.ContextHandlers
+import commands.PlayAlbumFromCurrentSong
+import commands.PreviousContext
 import kotlinx.coroutines.experimental.runBlocking
+import model.Model
+import model.RegularContext
 import org.apache.http.impl.cookie.BasicCommentHandler
 import utils.FileUtils
 import utils.toJsonArray
@@ -111,8 +116,18 @@ class Login {
 fun main(args: Array<String>) {
     val spotifyApi = Login().createAuthenticatedApi()
     val handler = BasicHandlers(spotifyApi)
-    handler.radioFromCurrentSong()
-            .build().execute()
+//    handler.radioFromCurrentSong()
+//            .build().execute()
+    val handler2 = ContextHandlers(spotifyApi)
+    val model = Model(mutableListOf(), RegularContext(spotifyApi.wrapped.informationAboutUsersCurrentPlayback.build().execute()))
+    handler2.handle(PlayAlbumFromCurrentSong(), model)
+    handler2.handle(PreviousContext(),model)
+    return
+    spotifyApi.wrapped.informationAboutUsersCurrentPlayback
+            .build()
+            .execute()
+            .also { println(it) }
+            .also { println(it.device.name) }
     return
     spotifyApi.wrapped.usersAvailableDevices.build().execute().forEach {
         println("Id ${it.id} name ${it.name}")

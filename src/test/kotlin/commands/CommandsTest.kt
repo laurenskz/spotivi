@@ -14,4 +14,19 @@ class CommandsTest {
 
     }
 
+    @Test
+    fun multipleCommands() {
+        val desired = listOf(
+                TransferCommand("lgtv"),
+                StartAlbum("5487438")
+        )
+        val actual = Commands.commandsSplitOnAmpersand("transfer lgtv & start-album 5487438")
+        assertEquals(desired, actual)
+        assertEquals(
+                listOf(TransferCommand("lg&tv"),
+                        StartAlbum("5487438")),
+                Commands.commandsSplitOnAmpersand("transfer lg\\&tv & start-album 5487438")
+        )
+    }
+
 }
