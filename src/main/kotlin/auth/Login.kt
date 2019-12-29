@@ -1,21 +1,18 @@
 package auth
 
-import com.github.salomonbrys.kodein.Kodein
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
 import commands.BasicHandlers
 import commands.ContextHandlers
 import commands.PlayAlbumFromCurrentSong
 import commands.PreviousContext
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import model.Model
 import model.RegularContext
-import org.apache.http.impl.cookie.BasicCommentHandler
 import utils.FileUtils
 import utils.toJsonArray
 import java.awt.Desktop
 import java.net.URI
-import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
 class Login {
@@ -121,7 +118,7 @@ fun main(args: Array<String>) {
     val handler2 = ContextHandlers(spotifyApi)
     val model = Model(mutableListOf(), RegularContext(spotifyApi.wrapped.informationAboutUsersCurrentPlayback.build().execute()))
     handler2.handle(PlayAlbumFromCurrentSong(), model)
-    handler2.handle(PreviousContext(),model)
+    handler2.handle(PreviousContext(), model)
     return
     spotifyApi.wrapped.informationAboutUsersCurrentPlayback
             .build()

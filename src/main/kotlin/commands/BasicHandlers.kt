@@ -52,12 +52,21 @@ class BasicHandlers(private val api: AuthenticatedSpotifyApi) : CommandHandler {
                         api.wrapped.setVolumeForUsersPlayback(it.volume_percent + command.change)
                     }
             is ShuffleCommand -> api.wrapped.toggleShuffleForUsersPlayback(true)
+            is StartOnCommand -> {
+                api.wrapped.usersAvailableDevices
+                        .build()
+                        .execute()
+                        .firstOrNull { it.name.trim().equals(command.deviceId.trim(), ignoreCase = true) }
+                        ?.let {
+                            api.wrapped.startResumeUsersPlayback()
+                                    .device_id(it.id)
+                                    .context_uri(command.contextId)
+                        }
+            }
             else -> null
         }
                 ?.build()
-                ?.also { println("started request!") }
-                ?.execute<Any>()
-        println("finished request!")
+                ?.execute()
         return model
     }
 

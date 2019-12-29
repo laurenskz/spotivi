@@ -1,9 +1,12 @@
 package model
 
+import auth.AuthenticatedSpotifyApi
 import com.wrapper.spotify.model_objects.miscellaneous.CurrentlyPlayingContext
 import com.wrapper.spotify.model_objects.specification.Album
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified
+import com.wrapper.spotify.model_objects.specification.Artist
 import com.wrapper.spotify.model_objects.specification.TrackSimplified
+import utils.FileUtils
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
@@ -18,6 +21,34 @@ sealed class Context(
 )
 
 data class RegularContext(override var context: CurrentlyPlayingContext?) : Context(context)
+
+class RandomArtist(override var context: CurrentlyPlayingContext?, private val api: AuthenticatedSpotifyApi) : Context(context) {
+
+    private val currentArtistsOrder = artists.shuffled()
+    private val index = 0
+
+    var currentArtistId: Artist? = null
+        private set
+        get() = currentArtistsOrder[index].let {
+            api.wrapped.searchArtists(it).build().execute()
+                    .items
+                    .first()
+
+        }
+
+
+    companion object {
+        val artists: List<String>
+
+        init {
+            artists = RandomArtist::class.java.getResourceAsStream("artists.txt").bufferedReader()
+                    .readLines()
+                    .map { it.removePrefix("\"") }
+                    .map { it.removeSuffix("\"") }
+        }
+    }
+}
+
 
 abstract class AlbumContext(override var context: CurrentlyPlayingContext?) : Context(context) {
 
@@ -46,7 +77,7 @@ class BasicAlbumContext(private val albums: Iterable<AlbumSimplified>, override 
     }
 
     override fun seekPrevious() {
-        index = max(0, index - 1)
+        index = maxOf(0, index - 1)
     }
 }
 

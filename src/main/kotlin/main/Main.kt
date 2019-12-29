@@ -4,8 +4,9 @@ import auth.Login
 import commands.BasicHandlers
 import commands.Commands
 import commands.ContextHandlers
-import kotlinx.coroutines.experimental.CommonPool
-import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import model.Model
 import model.RegularContext
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
@@ -15,7 +16,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage
 
 class SpotifyApi : MqttCallback {
     override fun messageArrived(topic: String, message: MqttMessage) {
-        async(CommonPool) {
+        GlobalScope.launch {
             Main.processCommand(String(message.payload))
         }
     }
@@ -47,11 +48,18 @@ object Main {
 }
 
 fun main(args: Array<String>) {
-    if (args.isEmpty()) {
-        println("Please supply the host as: <hostname>:<hostip>")
+    while (true) {
+        readLine()?.also {
+            GlobalScope.launch {
+                Main.processCommand(it)
+            }
+        }
     }
+}
+
+private fun runFromMqtt(args: Array<String>) {
     val host = args[0]
-    val client = MqttClient("tcp://$host", MqttClient.generateClientId())
+    val client = MqttClient("tcp://localhost:1883", MqttClient.generateClientId())
     client.connect()
     client.setCallback(SpotifyApi())
     client.subscribe("/home/spotify")

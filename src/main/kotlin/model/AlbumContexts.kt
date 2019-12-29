@@ -12,7 +12,7 @@ import utils.toPlaylist
 fun playlistToAlbums(api: AuthenticatedSpotifyApi, playlistUri: String): Iterable<AlbumSimplified> {
     val playlistFormatted = playlistUri.toPlaylist()
     return iterateOver {
-        api.wrapped.getPlaylistsTracks(playlistFormatted.user, playlistFormatted.playlist)
+        api.wrapped.getPlaylistsTracks(playlistFormatted.playlist)
                 .offset(it)
                 .build()
                 .execute()
@@ -35,6 +35,11 @@ fun artistToAlbums(api: AuthenticatedSpotifyApi, artistId: String): Iterable<Alb
 
 fun main(args: Array<String>) {
     val api = Main.spotifyApi
+    BasicAlbumContext(artistToAlbums(api, "0LcJLqbBmaGUft1e9Mm8HV"), null)
+            .also { it.seekNext() }
+            .currentAlbum()
+            .name
+            .also { println(it) }
     BasicAlbumContext(playlistToAlbums(api, "spotify:user:spotify:playlist:37i9dQZF1DX4xuWVBs4FgJ"), null)
             .also { it.seekNext() }
             .currentAlbum()

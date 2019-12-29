@@ -1,10 +1,9 @@
 package commands
 
 import auth.AuthenticatedSpotifyApi
-import com.wrapper.spotify.model_objects.specification.Playlist
+import com.wrapper.spotify.enums.ModelObjectType
 import com.wrapper.spotify.model_objects.specification.Track
 import com.wrapper.spotify.requests.IRequest
-import com.wrapper.spotify.requests.data.AbstractDataRequest
 import com.wrapper.spotify.requests.data.player.StartResumeUsersPlaybackRequest
 import model.*
 import utils.*
@@ -23,8 +22,9 @@ class ContextHandlers(private val api: AuthenticatedSpotifyApi) : CommandHandler
             is StartAlbum -> startAlbum(model, command.playlist)
             is NextAlbum -> playCurrentAlbumAfter(model) { it.seekNext() }
             is PreviousAlbum -> playCurrentAlbumAfter(model) { it.seekPrevious() }
+            is RandomMusicCommand -> playRandomMusic(model)
             else -> null
-        }?.build()?.execute<Any>()
+        }?.build()?.execute()
         if (command is PreviousContext)
             model.currentContext.context?.progress_ms?.let {
                 api.wrapped.seekToPositionInCurrentlyPlayingTrack(it)
@@ -32,7 +32,7 @@ class ContextHandlers(private val api: AuthenticatedSpotifyApi) : CommandHandler
         return model
     }
 
-    private fun currentArtistAlbums(model: Model): IRequest.Builder? {
+    private fun currentArtistAlbums(model: Model): IRequest.Builder<out Any, out Any>? {
         currentSong()
                 .artists
                 .first()
@@ -48,12 +48,12 @@ class ContextHandlers(private val api: AuthenticatedSpotifyApi) : CommandHandler
             }
 
 
-    private fun startAlbum(model: Model, playlistId: String): IRequest.Builder? {
+    private fun startAlbum(model: Model, playlistId: String): IRequest.Builder<out Any, out Any>? {
         val context = BasicAlbumContext(playlistToAlbums(api, playlistId), null)
         return playFromContext(model, context.currentAlbum().uri, null, context)
     }
 
-    private fun playFromContext(model: Model, context: String, offset: String?, currentContext: Context?): IRequest.Builder? {
+    private fun playFromContext(model: Model, context: String, offset: String?, currentContext: Context?): IRequest.Builder<out Any, out Any>? {
         return api.wrapped.startResumeUsersPlayback()
                 .context_uri(context)
                 .also { builder ->
@@ -63,14 +63,18 @@ class ContextHandlers(private val api: AuthenticatedSpotifyApi) : CommandHandler
                 }
     }
 
-    private fun previousContext(model: Model): IRequest.Builder? {
+    private fun previousContext(model: Model): IRequest.Builder<out Any, out Any>? {
         if (model.contextHistory.size == 0) return api.wrapped.startResumeUsersPlayback()
         val previousContext = model.contextHistory.removeAt(model.contextHistory.size - 1)
         model.currentContext = previousContext
         return when (previousContext) {
             is RegularContext -> api.wrapped.startResumeUsersPlayback()
                     .context_uri(previousContext.context?.context?.uri)
-                    .offset(previousContext.context?.item?.toJson())
+                    .also {
+                        if (previousContext.context?.context?.type != ModelObjectType.ARTIST) {
+                            it.offset(previousContext.context?.item?.toJson())
+                        }
+                    }
             is AlbumContext -> api.wrapped.startResumeUsersPlayback()
                     .context_uri(previousContext.context?.context?.uri)
                     .offset(previousContext.context?.item?.toJson())
@@ -81,6 +85,8 @@ class ContextHandlers(private val api: AuthenticatedSpotifyApi) : CommandHandler
                                 .dropWhile { it.uri != previousContext.context?.item?.uri }
                                 .toTypedArray()
                                 .createJson { it.uri })
+            is RandomArtist -> api.wrapped.startResumeUsersPlayback()
+                    .context_uri(previousContext.context?.context?.uri)
         }
     }
 
@@ -108,8 +114,24 @@ class ContextHandlers(private val api: AuthenticatedSpotifyApi) : CommandHandler
         model.contextHistory.add(model.currentContext)
     }
 
-    private fun playAlbumFromCurrentSong(model: Model): IRequest.Builder? =
+    private fun playAlbumFromCurrentSong(model: Model): IRequest.Builder<out Any, out Any>? =
             currentSong().let {
+                saveCurrentContext(model)
                 playFromContext(model, it.album.uri, null, null)
             }
+
+    private fun playRandomMusic(model: Model): IRequest.Builder<out Any, out Any> {
+        saveCurrentContext(model)
+        val context = RandomArtist(null, api)
+        model.currentContext = context
+        return playCurrentArtistAfter(context) {}
+    }
+
+    private fun playCurrentArtistAfter(artist: RandomArtist, operation: (RandomArtist) -> Unit): IRequest.Builder<out Any, out Any> {
+        operation(artist)
+        val currentArtistId = artist.currentArtistId
+        println(currentArtistId?.name)
+        return api.wrapped.startResumeUsersPlayback()
+                .context_uri(currentArtistId?.uri)
+    }
 }

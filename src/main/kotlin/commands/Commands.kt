@@ -46,11 +46,13 @@ object Commands {
             "shuffle" -> ShuffleCommand()
             "radio-from-current-song" -> RadioFromCurrentSong()
             "current-artist-albums" -> CurrentArtistAlbumsCommand()
-//            "search" -> SearchCommand(SearchCategory.byName(commands[1]), commands[2])
+//            "search" -> SearchCommand(SearchCategory.byName(model[1]), model[2])
             "start" -> PlayCommand(commands[1], commands.getOrNull(2))
+            "start-on" -> StartOnCommand(commands[1], commands[2])
             "start-album" -> StartAlbum(commands[1])
             "transfer" -> TransferCommand(commands[1])
             "change-volume" -> ChangeVolume(Integer.parseInt(commands[1]))
+            "random-music" -> RandomMusicCommand()
 //            "up" -> UpCommand()
 //            "down" -> DownCommand()
 //            "left" -> LeftCommand()
@@ -81,6 +83,7 @@ enum class SearchCategory(val externalName: String) {
 }
 
 data class TransferCommand(val deviceName: String) : Command()
+data class StartOnCommand(val deviceId: String, val contextId: String) : Command()
 
 data class SearchCommand(val category: SearchCategory, val query: String) : Command()
 
@@ -94,6 +97,7 @@ class DownCommand : Command()
 class LeftCommand : Command()
 class RightCommand : Command()
 class NextTrackCommand : Command()
+class RandomMusicCommand : Command()
 class PreviousTrackCommand : Command()
 class PlayAlbumFromCurrentSong : Command()
 class CurrentArtistAlbumsCommand : Command()
