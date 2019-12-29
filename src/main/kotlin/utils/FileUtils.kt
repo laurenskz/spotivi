@@ -10,4 +10,6 @@ object FileUtils {
     }
 
     fun refreshToken() = File("${spotiviDir()}/refresh.token")
+    fun deviceCache() = File("${spotiviDir()}/devices.cache")
+    fun savedContext() = File("${spotiviDir()}/context.cache")
 }
